@@ -28,7 +28,7 @@ async def handle_message(websocket, path):
 
 async def main():
     async with serve(handle_message, "localhost", 8765):
-        print("Mind awakes.")
+        print("The Mind awakes...")
         await asyncio.Future()
 
 
