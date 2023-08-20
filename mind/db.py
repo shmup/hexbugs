@@ -1,23 +1,11 @@
 import sqlite3
-from triggers import Triggers, player_not_in_game_template
+
 
 def initialize_db(db_name):
     db_handler = DBHandler(db_name)
     with db_handler as cursor:
-        with open('schema.sql', 'r') as f:
+        with open('sql/schema.sql', 'r') as f:
             cursor.executescript(f.read())
-
-            db_handler.create_trigger(
-                Triggers.ENFORCE_CURRENT_TURN_ON_INSERT.name,
-                player_not_in_game_template.format(
-                    name=Triggers.ENFORCE_CURRENT_TURN_ON_INSERT.name,
-                    action='INSERT'))
-
-            db_handler.create_trigger(
-                Triggers.ENFORCE_CURRENT_TURN_ON_UPDATE.name,
-                player_not_in_game_template.format(
-                    name=Triggers.ENFORCE_CURRENT_TURN_ON_UPDATE.name,
-                    action='UPDATE'))
 
 
 class DBHandler:

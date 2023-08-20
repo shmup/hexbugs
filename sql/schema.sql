@@ -28,6 +28,25 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY(player_id) REFERENCES players(id)
 );
 
+CREATE TRIGGER update_turn_after_transaction
+BEFORE INSERT ON transactions
+BEGIN
+   UPDATE games
+   SET current_turn = (
+     SELECT player_id
+     FROM game_players
+     WHERE game_id = NEW.game_id
+     AND player_id != NEW.player_id
+     ORDER BY player_id ASC
+     LIMIT 1
+   )
+   WHERE id = NEW.game_id
+   AND (
+     json_extract(NEW.action, '$.type') = 'add' OR
+     json_extract(NEW.action, '$.type') = 'move'
+   );
+END;
+
 /* CREATE TRIGGER check_game_player_before_insert */
 /* BEFORE INSERT ON transactions */
 /* FOR EACH ROW */

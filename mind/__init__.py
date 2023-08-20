@@ -28,6 +28,7 @@ async def handle_message(websocket, path):
 
 async def main():
   initialize_db('hexbugs.db')
+
   async with serve(handle_message, "localhost", 8765):
     print("The Mind awakes...")
     await asyncio.Future()

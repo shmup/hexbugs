@@ -1,11 +1,15 @@
 run:
-        @env/bin/python mind/__init__.py
+    @env/bin/python mind/__init__.py
 
 setup:
-	@echo "Setting up the database..."
-	@sqlite3 hexbugs.db < schema.sql
+    @echo "Setting up the database"
+    @sqlite3 hexbugs.db < sql/schema.sql
 
-browse:
+test:
+    @just clean
+    @just setup
+    @sqlite3 hexbugs.db < sql/test_automated_current_turn_trigger.sql
 
 clean:
-        rm hexbugs.db
+    @echo "Removing hexbugs.db"
+    @rm hexbugs.db
