@@ -1,18 +1,48 @@
 # hexbugs - a hive clone for 2 friends to play online
 
-Solo project that doesn't have to be "enterprise scale" by any means..
-
-## TODO
+## FIRST PASS TODO
 [x] - sqlite schema for game transactions
-[ ] - backend data structures (node or python), for the api
-[ ] - backend routing to start, progress, and end a game
-[ ] - develop game state validators
-[ ] - wire in database to backend
-[ ] - slew of httpies to "play" a game (tests, sorta)
-[ ] - develop websocket messages and callers
-[ ] - render a hive with rot.js
+[x] - websocket message handlers in python
+[x] - wire in sqlite database to backend
+
+## SECOND PASS TODO
+[ ] - gamestate data structures used by our websocket api
+[ ] - develop game state validation used by websocket api
+[ ] - develop needed websocket messages for a game
+    * the idea is that the UI can know the entire game state.
+    * this includes every single piece and their ID, for both players
+    * updates include joining game, movements, additions to hive, conceding, gameover
+[ ] - develop quick hacky debug UI w/ buttons to simulate a game
 [ ] - wire user events to websocket callers
+
+## THIRD PASS TODO
+[ ] - render a hive with rot.js
+[ ] - develop the game UI
+
+## FOURTH PASS TODO
 [ ] - polish
+
+## Mind built with python
+
+Will start a game when someone makes a request, the ID either a #hash or /slug.
+
+Websockets server that handles a variety of messages.
+
+1. player can join a game, keyed on lobby name
+2. player can concede
+3. player can add a bug to the hive
+4. playe can move a bug on the hive
+5. player can send a message/chat
+
+It will also do some validation, such as:
+
+1. is player taking an action in game
+2. is it their turn
+3. if turn 4, is queen played yet bc required to
+4. move legality in general for the various types of insects
+
+The database is basically a table of games and a table of transactions that
+constitute actions in a game.
 
 ## Frontend built out with
 
@@ -46,24 +76,6 @@ Solo project that doesn't have to be "enterprise scale" by any means..
     * optional toggle to show # on tiles in order of last played/moved?
     * maybe always make last moved always have some indicator
 
-## Mind built with python or javascript
-
-Will start a game when someone makes a request, the ID being the #hash perhaps
-
-Parse command:
-
-    Command that concedes
-    Command that adds a bug
-    Command that moves a bug
-    Command that chats
-
-Validate command:
-
-    Is a valid player
-    Player turn
-    Reject `turn>=4 && queen.sleeping`
-    Reject illegal moves
-
 ## Storage
 
 sqlite and localdb will be used.
@@ -80,13 +92,6 @@ CREATE TABLE players (
     name TEXT
 );
 
-/**
-    The `state` field could be a JSON or similar string that represents the
-    current state of the game. The `current_turn` field could be used to track
-    who's turn it is (by player id).
-
-    Ultimately, state is how you can re-render the page from nothing.
-*/
 CREATE TABLE games (
     id INTEGER PRIMARY KEY,
     player1_id INTEGER,
@@ -97,10 +102,6 @@ CREATE TABLE games (
     FOREIGN KEY(player2_id) REFERENCES players(id)
 );
 
-/**
-    The `action` field could be a JSON or similar string that describes the
-    action taken.
-*/
 CREATE TABLE transactions (
     id INTEGER PRIMARY KEY,
     game_id INTEGER,
@@ -139,44 +140,35 @@ CREATE TABLE transactions (
 7. No Recapture Rule: A piece, once moved, cannot be moved back to its original
    location on the player's next turn.
 
-8. Queen Bee Rule: The queen bee must be placed by the fourth turn.
+8. Queen Bee: The Queen Bee can only move one space at a time, but it is the
+   most important piece. If it gets surrounded by pieces, either your own or
+   your opponent's, you lose the game.
 
-9. Beetle Rule: The beetle moves one space like the queen, but it can also
-   climb on top of another piece and move over pieces.
+9. Beetle: The Beetle can move one space at a time like the Queen Bee, but it
+   also has the unique ability to climb on top of other pieces. This makes it
+   a very versatile and valuable piece.
 
-10. Grasshopper Rule: The grasshopper jumps in a straight line over one or more
-    pieces.
+10. Spider: The Spider must move exactly three spaces per turn, which can be
+    limiting but also allows for strategic positioning. It cannot backtrack in
+    the 3-space move.
 
-11. Spider Rule: The spider must move exactly three spaces, in one direction, per turn.
+11. Grasshopper: The Grasshopper jumps over other pieces and can quickly move
+    across the board. This makes it a valuable piece for both offense and
+    defense.
 
-12. Ant Rule: The ant can move to any spot it can slide to.
+12. Ant: The Ant can move to any unoccupied space on the board, making it the
+    most mobile piece.
 
-13. Game End Rule: The game ends when a queen bee is surrounded on all six
+13. Ladybug (expansion): The Ladybug moves three spaces per turn, two on top of
+    the Hive, and one down. It can't end its movement on top of the Hive, which
+    limits its versatility.
+
+14. Mosquito (expansion): The Mosquito takes on the movement abilities of any
+    piece it touches, making it potentially very versatile.
+
+15. Pillbug (expansion): The Pillbug can move one space at a time, or it can
+    move an adjacent unstacked piece (friend or foe) to another empty space
+    around itself.
+
+16. Game End Rule: The game ends when a queen bee is surrounded on all six
     sides by pieces of any color, with that player losing the game.
-
-
-## Theme
-
-1. Beetle -> Scarab
-    - They can climb over other bugs and move in any direction.
-
-2. Spider -> Tarantula
-    - They must move exactly three spaces around the hive.
-
-3. Grasshopper -> Cricket
-    - They can jump over other bugs to an unoccupied space on the other side.
-
-4. Soldier Ant -> Wasp
-    - They can move to any unoccupied space around the hive.
-
-5. Queen Bee -> Monarch Butterfly
-    - They can move to any adjacent space.
-
-6. Mosquito -> Tick
-    - They can mimic the movement of any bug they touch.
-
-7. Ladybug -> Firefly
-    - They can move three spaces; two on top of the hive and one down.
-
-8. Pillbug -> Roly Poly
-    - They can move one space or move an adjacent piece to another empty space adjacent to itself.
