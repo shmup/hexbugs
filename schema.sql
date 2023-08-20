@@ -5,14 +5,17 @@ CREATE TABLE IF NOT EXISTS players (
 
 CREATE TABLE IF NOT EXISTS games (
     id INTEGER PRIMARY KEY,
-    player1_id INTEGER,
-    player2_id INTEGER,
     current_turn INTEGER,
     game_over INTEGER DEFAULT 0,
     state TEXT, /* json or a string. re-renders a page from nothing */
-    FOREIGN KEY(player1_id) REFERENCES players(id),
-    FOREIGN KEY(player2_id) REFERENCES players(id)
     FOREIGN KEY(current_turn) REFERENCES players(id)
+);
+
+CREATE TABLE IF NOT EXISTS game_players (
+    game_id INTEGER,
+    player_id INTEGER,
+    FOREIGN KEY(game_id) REFERENCES games(id),
+    FOREIGN KEY(player_id) REFERENCES players(id)
 );
 
 CREATE TABLE IF NOT EXISTS transactions (
@@ -25,6 +28,36 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY(player_id) REFERENCES players(id)
 );
 
+/* CREATE TRIGGER check_game_player_before_insert */
+/* BEFORE INSERT ON transactions */
+/* FOR EACH ROW */
+/* BEGIN */
+/*   SELECT CASE */
+/*     WHEN (SELECT COUNT(*) FROM game_players WHERE game_id = NEW.game_id AND player_id = NEW.player_id) = 0 THEN */
+/*       RAISE(FAIL, "Transaction involves a player not in the game") */
+/*   END; */
+/* END; */
+
+/* CREATE TRIGGER IF NOT EXISTS enforce_current_turn */
+/* BEFORE INSERT ON games */
+/* FOR EACH ROW */
+/* BEGIN */
+/*     SELECT CASE */
+/*         WHEN (SELECT COUNT(*) FROM game_players WHERE game_id = NEW.id AND player_id = NEW.current_turn) = 0 THEN */
+/*         RAISE(ABORT, 'Current turn must be one of the players') */
+/*     END; */
+/* END; */
+
+/* CREATE TRIGGER IF NOT EXISTS enforce_current_turn */
+/* BEFORE INSERT ON games */
+/* FOR EACH ROW */
+/* BEGIN */
+/*     SELECT CASE */
+/*         WHEN (SELECT COUNT(*) FROM game_players WHERE game_id = NEW.id AND player_id = NEW.current_turn) != 1 THEN */
+/*         RAISE(ABORT, 'Current turn must be one of the players') */
+/*     END; */
+/* END; */
+
 /* CREATE TABLE IF NOT EXISTS action_codes ( */
 /*     code INTEGER PRIMARY KEY UNIQUE, */
 /*     description TEXT */
@@ -33,16 +66,6 @@ CREATE TABLE IF NOT EXISTS transactions (
 /* INSERT OR IGNORE INTO action_codes (code, description) VALUES */
 /*     (0, 'Player loses'), */
 /*     (1, 'Player wins'); */
-
-/* CREATE TRIGGER IF NOT EXISTS enforce_current_turn */
-/* BEFORE INSERT ON games */
-/* FOR EACH ROW */
-/* BEGIN */
-/*     SELECT CASE */
-/*         WHEN NEW.current_turn != NEW.player1_id OR NEW.current_turn != NEW.player2_id THEN */
-/*         RAISE(ABORT, 'Current turn must be one of the players') */
-/*     END; */
-/* END; */
 
 /* CREATE TRIGGER IF NOT EXISTS enforce_player_in_game */
 /* BEFORE INSERT ON transactions */
