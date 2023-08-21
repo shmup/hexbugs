@@ -12,4 +12,4 @@ test:
 
 clean:
     @echo "Removing hexbugs.db"
-    @rm hexbugs.db
+    @rm -f hexbugs.db

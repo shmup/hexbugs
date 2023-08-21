@@ -12,6 +12,8 @@ INSERT INTO transactions (game_id, player_id, action)
 VALUES
     ((SELECT id FROM games), (SELECT id FROM players WHERE name = 'Weasel'), '{"type": "add", "bug": 1}');
 
+SELECT 'Current turn: ' || current_turn AS current_turn_label FROM games;
+
 SELECT "Bravd adds a bug";
 INSERT INTO transactions (game_id, player_id, action)
 VALUES
