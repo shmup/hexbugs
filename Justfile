@@ -8,7 +8,8 @@ setup:
 test:
     @just clean
     @just setup
-    @sqlite3 hexbugs.db < sql/test_automated_current_turn_trigger.sql
+    @env/bin/python tests/check_triggers.py
+    @sqlite-utils hexbugs.db "select * from game_view" --table
 
 clean:
     @echo "Removing hexbugs.db"

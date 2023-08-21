@@ -28,15 +28,36 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY(player_id) REFERENCES players(id)
 );
 
+CREATE VIEW game_view AS
+SELECT
+    g.id AS game_id,
+    g.game_over,
+    g.state,
+    p1.name AS current_turn,
+    GROUP_CONCAT(p2.name, ', ') AS players
+FROM
+    games g
+JOIN
+    players p1 ON g.current_turn = p1.id
+JOIN
+    game_players gp ON g.id = gp.game_id
+JOIN
+    players p2 ON gp.player_id = p2.id
+GROUP BY
+    g.id;
+
 CREATE TRIGGER update_turn_after_transaction
-BEFORE INSERT ON transactions
+AFTER INSERT ON transactions
 BEGIN
    UPDATE games
    SET current_turn = (
      SELECT player_id
      FROM game_players
      WHERE game_id = NEW.game_id
-     AND player_id != NEW.player_id
+     AND (
+       current_turn IS NULL OR
+       player_id != current_turn
+     )
      ORDER BY player_id ASC
      LIMIT 1
    )
@@ -47,151 +68,23 @@ BEGIN
    );
 END;
 
-/* CREATE TRIGGER check_game_player_before_insert */
-/* BEFORE INSERT ON transactions */
-/* FOR EACH ROW */
-/* BEGIN */
-/*   SELECT CASE */
-/*     WHEN (SELECT COUNT(*) FROM game_players WHERE game_id = NEW.game_id AND player_id = NEW.player_id) = 0 THEN */
-/*       RAISE(FAIL, "Transaction involves a player not in the game") */
-/*   END; */
-/* END; */
-
-/* CREATE TRIGGER IF NOT EXISTS enforce_current_turn */
-/* BEFORE INSERT ON games */
-/* FOR EACH ROW */
-/* BEGIN */
-/*     SELECT CASE */
-/*         WHEN (SELECT COUNT(*) FROM game_players WHERE game_id = NEW.id AND player_id = NEW.current_turn) = 0 THEN */
-/*         RAISE(ABORT, 'Current turn must be one of the players') */
-/*     END; */
-/* END; */
-
-/* CREATE TRIGGER IF NOT EXISTS enforce_current_turn */
-/* BEFORE INSERT ON games */
-/* FOR EACH ROW */
-/* BEGIN */
-/*     SELECT CASE */
-/*         WHEN (SELECT COUNT(*) FROM game_players WHERE game_id = NEW.id AND player_id = NEW.current_turn) != 1 THEN */
-/*         RAISE(ABORT, 'Current turn must be one of the players') */
-/*     END; */
-/* END; */
-
-/* CREATE TABLE IF NOT EXISTS action_codes ( */
-/*     code INTEGER PRIMARY KEY UNIQUE, */
-/*     description TEXT */
-/* ); */
-
-/* INSERT OR IGNORE INTO action_codes (code, description) VALUES */
-/*     (0, 'Player loses'), */
-/*     (1, 'Player wins'); */
-
-/* CREATE TRIGGER IF NOT EXISTS enforce_player_in_game */
-/* BEFORE INSERT ON transactions */
-/* FOR EACH ROW */
-/* BEGIN */
-/*     SELECT CASE */
-/*         WHEN (SELECT player1_id FROM games WHERE id = NEW.game_id) != NEW.player_id AND */
-/*              (SELECT player2_id FROM games WHERE id = NEW.game_id) != NEW.player_id THEN */
-/*         RAISE(ABORT, 'Player must be in the current game') */
-/*     END; */
-/* END; */
-
-/* CREATE TRIGGER IF NOT EXISTS enforce_different_players */
-/* BEFORE INSERT ON games */
-/* FOR EACH ROW */
-/* BEGIN */
-/*     SELECT CASE */
-/*         WHEN NEW.player1_id = NEW.player2_id THEN */
-/*         RAISE(ABORT, 'Player1 and Player2 cannot be the same player') */
-/*     END; */
-/* END; */
-
-/* CREATE TRIGGER IF NOT EXISTS enforce_two_players */
-/* BEFORE INSERT ON transactions */
-/* FOR EACH ROW */
-/* BEGIN */
-/*     SELECT CASE */
-/*         WHEN (SELECT player1_id FROM games WHERE id = NEW.game_id) IS NULL OR */
-/*              (SELECT player2_id FROM games WHERE id = NEW.game_id) IS NULL THEN */
-/*         RAISE(ABORT, 'Game must have two distinct players before starting') */
-/*     END; */
-/* END; */
-
-/* CREATE TRIGGER IF NOT EXISTS enforce_alternating_turns */
-/* BEFORE INSERT ON transactions */
-/* FOR EACH ROW */
-/* BEGIN */
-/*     SELECT CASE */
-/*         WHEN (SELECT player_id FROM transactions WHERE game_id = NEW.game_id ORDER BY timestamp DESC LIMIT 1) = NEW.player_id THEN */
-/*         RAISE(ABORT, 'Player cannot make two moves in a row') */
-/*     END; */
-/* END; */
-
-/* CREATE TRIGGER IF NOT EXISTS enforce_game_over */
-/* BEFORE INSERT ON transactions */
-/* FOR EACH ROW */
-/* BEGIN */
-/*     SELECT CASE */
-/*         WHEN (SELECT game_over FROM games WHERE id = NEW.game_id) = 1 THEN */
-/*         RAISE(ABORT, 'Game has already ended') */
-/*     END; */
-/* END; */
-
-/* CREATE TRIGGER IF NOT EXISTS enforce_different_actions */
-/* BEFORE INSERT ON transactions */
-/* FOR EACH ROW */
-/* BEGIN */
-/*     SELECT CASE */
-/*         WHEN (SELECT action FROM transactions WHERE game_id = NEW.game_id ORDER BY timestamp DESC LIMIT 1) = NEW.action THEN */
-/*         RAISE(ABORT, 'Player cannot perform the same action twice in a row') */
-/*     END; */
-/* END; */
-
-/* CREATE TRIGGER IF NOT EXISTS enforce_player_turn */
-/* BEFORE INSERT ON transactions */
-/* FOR EACH ROW */
-/* BEGIN */
-/*     SELECT CASE */
-/*         WHEN (SELECT current_turn FROM games WHERE id = NEW.game_id) != NEW.player_id THEN */
-/*         RAISE(ABORT, 'It is not the player''s turn') */
-/*     END; */
-/* END; */
-
-/* CREATE TRIGGER IF NOT EXISTS enforce_one_move_per_turn */
-/* BEFORE INSERT ON transactions */
-/* FOR EACH ROW */
-/* BEGIN */
-/*     SELECT CASE */
-/*         WHEN (SELECT player_id FROM transactions WHERE game_id = NEW.game_id ORDER BY timestamp DESC LIMIT 1) = NEW.player_id THEN */
-/*         RAISE(ABORT, 'Player cannot make multiple moves in one turn') */
-/*     END; */
-/* END; */
-
-/* CREATE TRIGGER IF NOT EXISTS update_game_state */
-/* AFTER INSERT ON transactions */
-/* FOR EACH ROW */
-/* BEGIN */
-/*     UPDATE games */
-/*     SET state = (SELECT action FROM transactions WHERE game_id = NEW.game_id ORDER BY timestamp DESC LIMIT 1) */
-/*     WHERE id = NEW.game_id; */
-/* END; */
-
-/* CREATE TRIGGER IF NOT EXISTS switch_turns */
-/* AFTER INSERT ON transactions */
-/* FOR EACH ROW */
-/* BEGIN */
-/*     UPDATE games */
-/*     SET current_turn = CASE WHEN current_turn = player1_id THEN player2_id ELSE player1_id END */
-/*     WHERE id = NEW.game_id; */
-/* END; */
-
-/* CREATE TRIGGER IF NOT EXISTS game_over */
-/* AFTER INSERT ON transactions */
-/* FOR EACH ROW */
-/* WHEN NEW.action_code = 1 -- 'Player wins' is represented by 1 */
-/* BEGIN */
-/*     UPDATE games */
-/*     SET game_over = 1 */
-/*     WHERE id = NEW.game_id; */
-/* END; */
+CREATE TRIGGER set_first_turn_after_second_player_added
+AFTER INSERT ON game_players
+BEGIN
+   UPDATE games
+   SET current_turn = (
+     SELECT player_id
+     FROM (
+       SELECT player_id
+       FROM game_players
+       WHERE game_id = NEW.game_id
+       LIMIT 1
+     )
+   )
+   WHERE id = NEW.game_id
+   AND (
+     SELECT COUNT(player_id)
+     FROM game_players
+     WHERE game_id = NEW.game_id
+   ) = 2;
+END;
