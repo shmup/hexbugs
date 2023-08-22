@@ -1,7 +1,9 @@
 run:
-    @env/bin/python mind/__init__.py
+    @just setup
+    @env/bin/python -m mind
 
 setup:
+    @just clean
     @echo "Setting up the database"
     @sqlite3 hexbugs.db < sql/schema.sql
 
