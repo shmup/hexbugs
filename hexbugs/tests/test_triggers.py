@@ -1,5 +1,6 @@
 import sqlite3
 import json
+from colorama import Fore, Style
 
 
 def test_trigger():
@@ -53,6 +54,8 @@ def test_change_players_trigger():
         assert c.fetchone(
         )[0] == bravd_id, "Current turn should be Bravd after Weasel's move"
 
+        print(Fore.LIGHTGREEN_EX + "Bravd's turn!" + Style.RESET_ALL)
+
         c.execute(
             f"INSERT INTO transactions (game_id, player_id, action) VALUES ({game_id}, {bravd_id}, ?)",
             (json.dumps({
@@ -63,6 +66,8 @@ def test_change_players_trigger():
         c.execute(f'SELECT current_turn FROM games WHERE id = {game_id}')
         assert c.fetchone(
         )[0] == weasel_id, "Current turn should be Weasel after Bravd's move"
+
+        print(Fore.LIGHTGREEN_EX + "Weasel's turn!" + Style.RESET_ALL)
 
         print("Current turn correctly set after both took a turn")
     except Exception as e:

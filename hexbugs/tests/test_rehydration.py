@@ -1,5 +1,6 @@
 import sqlite3
 from hexbugs.mind import player
+from colorama import Fore, Style
 
 
 def test_rehydration():
@@ -30,8 +31,10 @@ def test_rehydration():
         conn.commit()
 
         data = player.rehydrate_game(game_id)
+        assert data == ((1, 1, 0, None), [(1, 'Weasel'), (2, 'Bravd')], [])
 
-        print(data)
+
+        print(Fore.LIGHTGREEN_EX + "Rehydration matches as expected!" + Style.RESET_ALL)
 
         c.execute(f"DELETE FROM game_players WHERE game_id = {game_id}")
         c.execute(f"DELETE FROM games WHERE id = {game_id}")
