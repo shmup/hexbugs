@@ -25,6 +25,8 @@ def test_triggers():
             f"INSERT INTO game_players (game_id, player_id) VALUES ({game_id}, {weasel_id}), ({game_id}, {bravd_id})"
         )
 
+        print("Weasel and Bravd join the game")
+
         c.execute(
             f"INSERT INTO transactions (game_id, player_id, action) VALUES ({game_id}, {weasel_id}, ?)",
             (json.dumps({
@@ -46,6 +48,8 @@ def test_triggers():
         c.execute(f'SELECT current_turn FROM games WHERE id = {game_id}')
         assert c.fetchone(
         )[0] == weasel_id, "Current turn should be Weasel after Bravd's move"
+
+        print("Current turn correctly set after both took a turn")
 
         conn.commit()
 
