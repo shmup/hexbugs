@@ -15,7 +15,10 @@ test: clean setup
     @env/bin/python hexbugs/tests/__init__.py
 
 sync-to-dungeon:
-    @rsync -avzp --exclude='.git' --exclude='env' . dungeon.red:src/games/hexbugs/
+    @rsync -avzp . dungeon.red:src/games/hexbugs/ \
+      --exclude='__pycache__' \
+      --exclude='.git' \
+      --exclude='env'
 
 clean:
     @echo "Removing hexbugs.db"
