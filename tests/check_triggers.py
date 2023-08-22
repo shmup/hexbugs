@@ -2,7 +2,22 @@ import sqlite3
 import json
 
 
-def test_triggers():
+def test_trigger():
+    conn = sqlite3.connect('hexbugs.db')
+    c = conn.cursor()
+
+    try:
+        c.execute('BEGIN')  # Start a transaction
+        # Insert or update, causing the trigger to fire...
+        # Make assertions to test the behavior of the trigger...
+    except Exception as e:
+        print(f'Error: {e}')
+    finally:
+        conn.rollback()  # Undo changes
+        conn.close()
+
+
+def test_change_players_trigger():
     conn = sqlite3.connect('hexbugs.db')
     c = conn.cursor()
 
@@ -50,16 +65,13 @@ def test_triggers():
         )[0] == weasel_id, "Current turn should be Weasel after Bravd's move"
 
         print("Current turn correctly set after both took a turn")
-
-        conn.commit()
-
     except Exception as e:
         print(f'Error: {e}')
-        conn.rollback()
 
     finally:
+        conn.rollback()
         conn.close()
 
 
 if __name__ == '__main__':
-    test_triggers()
+    test_change_players_trigger()
