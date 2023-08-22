@@ -35,6 +35,7 @@ def test_rehydration():
 
 
         print(Fore.LIGHTGREEN_EX + "Rehydration matches as expected!" + Style.RESET_ALL)
+        print("---------------")
 
         c.execute(f"DELETE FROM game_players WHERE game_id = {game_id}")
         c.execute(f"DELETE FROM games WHERE id = {game_id}")
