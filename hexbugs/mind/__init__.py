@@ -30,3 +30,10 @@ async def main():
   async with serve(handle_message, "localhost", 8765):
     print("The Mind awakes...")
     await asyncio.Future()
+
+
+if __name__ == '__main__':
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print('Restarting server')

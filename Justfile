@@ -1,9 +1,10 @@
+export PYTHONPATH:="."
+
 run:
     @just setup
-    @env/bin/python -m mind
+    @env/bin/python hexbugs/__init__.py
 
-setup:
-    @just clean
+setup: clean
     @echo "Setting up the database"
     @sqlite3 hexbugs.db < sql/schema.sql
 
