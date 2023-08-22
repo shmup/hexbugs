@@ -11,10 +11,8 @@ setup: clean
 peek:
     @sqlite-utils hexbugs.db "select * from game_view" --table
 
-test:
-    @just clean
-    @just setup
-    @env/bin/python tests/check_triggers.py
+test: clean setup
+    @env/bin/python hexbugs/tests/__init__.py
 
 sync-to-dungeon:
     @rsync -avzp --exclude='.git' --exclude='env' . dungeon.red:src/games/hexbugs/

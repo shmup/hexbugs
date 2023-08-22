@@ -74,4 +74,5 @@ def test_change_players_trigger():
 
 
 if __name__ == '__main__':
-    test_change_players_trigger()
+    # test_change_players_trigger()
+    test_rehydration()
