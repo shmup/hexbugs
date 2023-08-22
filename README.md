@@ -6,12 +6,20 @@
 [x] - wire in sqlite database to backend
 
 ## SECOND PASS TODO
+[ ] - sql queries / db method
+        [x] 1. complete rehydration query, `game`, `game_players` and every
+               transaction.
+        [ ] 2. update game
 [ ] - gamestate data structures used by our websocket api
+        [x] 1. add a data structure for initial game state
+        [ ] 2. add a data structure for a game update
+        [x] 3. add a complete data structure for rehydration w/ history
 [ ] - develop game state validation used by websocket api
 [ ] - develop needed websocket messages for a game
-    * the idea is that the UI can know the entire game state.
-    * this includes every single piece and their ID, for both players
-    * updates include joining game, movements, additions to hive, conceding, gameover
+        * the idea is that the UI can know the entire game state.
+        * this includes every single piece and their ID, for both players
+        * updates include joining game, movements, additions to hive,
+          conceding, gameover
 [ ] - develop quick hacky debug UI w/ buttons to simulate a game
 [ ] - wire user events to websocket callers
 
@@ -20,6 +28,7 @@
 [ ] - develop the game UI
 
 ## FOURTH PASS TODO
+[ ] - authentication
 [ ] - polish
 
 ## Mind built with python
@@ -86,32 +95,9 @@ localdb will remember any options? idk yet.
 
 
 ## Schema
-```sql
-CREATE TABLE players (
-    id INTEGER PRIMARY KEY,
-    name TEXT
-);
 
-CREATE TABLE games (
-    id INTEGER PRIMARY KEY,
-    player1_id INTEGER,
-    player2_id INTEGER,
-    current_turn INTEGER,
-    state TEXT,
-    FOREIGN KEY(player1_id) REFERENCES players(id),
-    FOREIGN KEY(player2_id) REFERENCES players(id)
-);
+Peek `sql/schema.sql`
 
-CREATE TABLE transactions (
-    id INTEGER PRIMARY KEY,
-    game_id INTEGER,
-    player_id INTEGER,
-    action TEXT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(game_id) REFERENCES games(id),
-    FOREIGN KEY(player_id) REFERENCES players(id)
-);
-```
 
 ## Rules
 1. Initial Placement Rule: The first piece played by each player must be placed
