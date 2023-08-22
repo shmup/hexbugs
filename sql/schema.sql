@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY(player_id) REFERENCES players(id)
 );
 
-CREATE VIEW game_view AS
+CREATE VIEW IF NOT EXISTS game_view AS
 SELECT
     g.id AS game_id,
     g.game_over,
