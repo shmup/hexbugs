@@ -1,32 +1,16 @@
-import sqlite3
-from hexbugs.mind import player
 from colorama import Fore, Style
+from hexbugs.mind import player
+from hexbugs.tests.utils import add_db_defaults
+import sqlite3
 
 
 def test_rehydration():
     conn = sqlite3.connect('hexbugs.db')
     c = conn.cursor()
-
     c.execute('BEGIN')
+
     try:
-        c.execute("INSERT INTO players (name) VALUES ('Weasel'), ('Bravd')")
-
-        c.execute("SELECT id FROM players WHERE name = 'Weasel'")
-        weasel_id = c.fetchone()[0]
-
-        c.execute("SELECT id FROM players WHERE name = 'Bravd'")
-        bravd_id = c.fetchone()[0]
-
-        c.execute("INSERT INTO games DEFAULT VALUES")
-
-        c.execute("SELECT id FROM games")
-        game_id = c.fetchone()[0]
-
-        c.execute(
-            f"INSERT INTO game_players (game_id, player_id) VALUES ({game_id}, {weasel_id}), ({game_id}, {bravd_id})"
-        )
-
-        print("Weasel and Bravd join the game")
+        [game_id, weasel_id, bravd_id] = add_db_defaults(c)
 
         conn.commit()
 
