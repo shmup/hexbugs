@@ -38,6 +38,15 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY(player_id) REFERENCES players(id)
 );
 
+CREATE TABLE IF NOT EXISTS bug_log (
+    game_id INTEGER,
+    player_id INTEGER,
+    bug_id INTEGER,
+    FOREIGN KEY(game_id) REFERENCES games(id),
+    FOREIGN KEY(player_id) REFERENCES players(id),
+    FOREIGN KEY(bug_id) REFERENCES bugs(id)
+);
+
 CREATE TRIGGER verify_bug_id_before_transaction
 BEFORE INSERT ON transactions
 FOR EACH ROW
@@ -48,6 +57,16 @@ BEGIN
       SELECT 1 FROM bugs WHERE id = json_extract(NEW.action, '$.bug_id')
    );
 END;
+
+CREATE TRIGGER log_add_bug_action_after_transaction
+AFTER INSERT ON transactions
+FOR EACH ROW
+WHEN json_extract(NEW.action, '$.type') = 'add'
+BEGIN
+    INSERT INTO bug_log (game_id, player_id, bug_id)
+    VALUES (NEW.game_id, NEW.player_id, json_extract(NEW.action, '$.bug_id'));
+END;
+
 CREATE VIEW IF NOT EXISTS game_view AS
 SELECT
     g.id AS game_id,
