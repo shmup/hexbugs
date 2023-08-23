@@ -7,6 +7,19 @@ def add_player(name):
         cursor.execute("INSERT INTO players (name) VALUES (?)", (name,))
 
 
+def add_bug(game_id, player_id, bug_id, x, y):
+    with DBHandler('hexbugs.db') as cursor:
+        action = json.dumps({
+            "type": "add",
+            "bug_id": bug_id,
+            "x": x,
+            "y": y
+        })
+        cursor.execute(
+            "INSERT INTO transactions (game_id, player_id, action) VALUES (?, ?, ?)",
+            (game_id, player_id, action))
+
+
 def rehydrate_game(game_id):
     with DBHandler('hexbugs.db') as cursor:
         # Get the game
