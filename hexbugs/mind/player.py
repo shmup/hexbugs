@@ -1,4 +1,5 @@
-from db import DBHandler
+from hexbugs.mind.db import DBHandler
+import json
 
 
 def add_player(name):
