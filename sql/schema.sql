@@ -8,17 +8,17 @@ VALUES
     ('Queen'), ('Beetle'), ('Spider'), ('Grasshopper'), ('Ant'), ('Ladybug'), ('Mosquito'), ('Pillbug'),
     ('Queen'), ('Beetle'), ('Spider'), ('Grasshopper'), ('Ant'), ('Ladybug'), ('Mosquito'), ('Pillbug');
 
-CREATE TABLE IF NOT EXISTS players (
-    id INTEGER PRIMARY KEY,
-    name TEXT
-);
-
 CREATE TABLE IF NOT EXISTS games (
     id INTEGER PRIMARY KEY,
     current_turn INTEGER,
     game_over INTEGER DEFAULT 0,
     state TEXT, /* json or a string. re-renders a page from nothing */
     FOREIGN KEY(current_turn) REFERENCES players(id)
+);
+
+CREATE TABLE IF NOT EXISTS players (
+    id INTEGER PRIMARY KEY,
+    name TEXT
 );
 
 CREATE TABLE IF NOT EXISTS game_players (
@@ -32,19 +32,10 @@ CREATE TABLE IF NOT EXISTS transactions (
     id INTEGER PRIMARY KEY,
     game_id INTEGER,
     player_id INTEGER,
-    action TEXT, /* json or string, a player action or changing game state */
+    action TEXT, /* { "type": "add", "bug_id": bug_id, ... } */
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(game_id) REFERENCES games(id),
     FOREIGN KEY(player_id) REFERENCES players(id)
-);
-
-CREATE TABLE IF NOT EXISTS bug_log (
-    game_id INTEGER,
-    player_id INTEGER,
-    bug_id INTEGER,
-    FOREIGN KEY(game_id) REFERENCES games(id),
-    FOREIGN KEY(player_id) REFERENCES players(id),
-    FOREIGN KEY(bug_id) REFERENCES bugs(id)
 );
 
 CREATE TRIGGER verify_bug_id_before_transaction
@@ -56,15 +47,6 @@ BEGIN
    WHERE NOT EXISTS (
       SELECT 1 FROM bugs WHERE id = json_extract(NEW.action, '$.bug_id')
    );
-END;
-
-CREATE TRIGGER log_add_bug_action_after_transaction
-AFTER INSERT ON transactions
-FOR EACH ROW
-WHEN json_extract(NEW.action, '$.type') = 'add'
-BEGIN
-    INSERT INTO bug_log (game_id, player_id, bug_id)
-    VALUES (NEW.game_id, NEW.player_id, json_extract(NEW.action, '$.bug_id'));
 END;
 
 CREATE VIEW IF NOT EXISTS game_view AS
