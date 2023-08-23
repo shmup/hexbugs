@@ -67,6 +67,31 @@ JOIN
 GROUP BY
     g.id;
 
+CREATE VIEW game_history AS
+SELECT 
+    t.game_id,
+    t.player_id,
+    p.name AS player_name,
+    CASE
+        WHEN json_extract(t.action, '$.type') = 'add' THEN 'added'
+        WHEN json_extract(t.action, '$.type') = 'move' THEN 'moved'
+        ELSE 'performed an action'
+    END AS action_type,
+    b.name AS bug_name,
+    json_extract(t.action, '$.x') AS x,
+    json_extract(t.action, '$.y') AS y,
+    t.timestamp
+FROM 
+    transactions t
+JOIN 
+    players p ON t.player_id = p.id
+JOIN 
+    bugs b ON json_extract(t.action, '$.bug_id') = b.id
+WHERE 
+    (json_extract(t.action, '$.type') = 'add' OR json_extract(t.action, '$.type') = 'move')
+ORDER BY 
+    t.timestamp;
+
 CREATE TRIGGER update_turn_after_transaction
 AFTER INSERT ON transactions
 BEGIN
