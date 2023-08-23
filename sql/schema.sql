@@ -38,6 +38,16 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY(player_id) REFERENCES players(id)
 );
 
+CREATE TRIGGER verify_bug_id_before_transaction
+BEFORE INSERT ON transactions
+FOR EACH ROW
+WHEN json_extract(NEW.action, '$.type') = 'add'
+BEGIN
+   SELECT RAISE(ABORT, 'Invalid bug_id')
+   WHERE NOT EXISTS (
+      SELECT 1 FROM bugs WHERE id = json_extract(NEW.action, '$.bug_id')
+   );
+END;
 CREATE VIEW IF NOT EXISTS game_view AS
 SELECT
     g.id AS game_id,

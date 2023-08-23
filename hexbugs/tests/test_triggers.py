@@ -47,7 +47,7 @@ def test_change_players_trigger():
             f"INSERT INTO transactions (game_id, player_id, action) VALUES ({game_id}, {weasel_id}, ?)",
             (json.dumps({
                 "type": "add",
-                "bug": 1
+                "bug_id": 1
             }),))
 
         c.execute(f'SELECT current_turn FROM games WHERE id = {game_id}')
@@ -60,7 +60,7 @@ def test_change_players_trigger():
             f"INSERT INTO transactions (game_id, player_id, action) VALUES ({game_id}, {bravd_id}, ?)",
             (json.dumps({
                 "type": "add",
-                "bug": 2
+                "bug_id": 2
             }),))
 
         c.execute(f'SELECT current_turn FROM games WHERE id = {game_id}')
