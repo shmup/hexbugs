@@ -17,8 +17,7 @@ def test_rehydration():
         data = player.rehydrate_game(game_id)
         assert data == ((1, 1, 0, None), [(1, 'Weasel'), (2, 'Bravd')], [])
 
-
-        print(Fore.LIGHTGREEN_EX + "Rehydration matches as expected!" + Style.RESET_ALL)
+        print(f'{Fore.LIGHTGREEN_EX}Rehydration matches as expected!{Style.RESET_ALL}')
         print("---------------")
 
         c.execute(f"DELETE FROM game_players WHERE game_id = {game_id}")
@@ -28,7 +27,7 @@ def test_rehydration():
         conn.commit()
 
     except Exception as e:
-        print(f'Error: {e}')
+        print(f'{Fore.RED}Error: {e}{Style.RESET_ALL}')
 
     finally:
         conn.close()

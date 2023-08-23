@@ -37,10 +37,12 @@ def test_change_players_trigger():
         )[0] == weasel_id, "Current turn should be Weasel after Bravd's move"
 
         print("Bravd took a turn")
-        print(Fore.LIGHTGREEN_EX + "Current turn correctly set after both took a turn" + Style.RESET_ALL)
+        print(
+            f'{Fore.LIGHTGREEN_EX}Current turn correctly set after both took a turn{Style.RESET_ALL}'
+        )
         print("---------------")
     except Exception as e:
-        print(f'Error: {e}')
+        print(f'{Fore.RED}Error: {e}{Style.RESET_ALL}')
 
     finally:
         conn.rollback()
