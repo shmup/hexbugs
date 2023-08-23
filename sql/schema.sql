@@ -1,3 +1,13 @@
+CREATE TABLE IF NOT EXISTS bugs (
+    id INTEGER PRIMARY KEY,
+    name TEXT
+);
+
+INSERT INTO bugs (name)
+VALUES
+    ('Queen'), ('Beetle'), ('Spider'), ('Grasshopper'), ('Ant'), ('Ladybug'), ('Mosquito'), ('Pillbug'),
+    ('Queen'), ('Beetle'), ('Spider'), ('Grasshopper'), ('Ant'), ('Ladybug'), ('Mosquito'), ('Pillbug');
+
 CREATE TABLE IF NOT EXISTS players (
     id INTEGER PRIMARY KEY,
     name TEXT
