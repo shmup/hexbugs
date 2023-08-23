@@ -1,21 +1,6 @@
 import sqlite3
 import json
 from colorama import Fore, Style
-
-
-def test_trigger():
-    conn = sqlite3.connect('hexbugs.db')
-    c = conn.cursor()
-
-    try:
-        c.execute('BEGIN')  # Start a transaction
-        # Insert or update, causing the trigger to fire...
-        # Make assertions to test the behavior of the trigger...
-    except Exception as e:
-        print(f'Error: {e}')
-    finally:
-        conn.rollback()  # Undo changes
-        conn.close()
 from hexbugs.tests.utils import add_db_defaults
 
 
