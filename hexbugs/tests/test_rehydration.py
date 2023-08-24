@@ -1,23 +1,22 @@
 from colorama import Fore, Style
 from hexbugs.mind import player
 from hexbugs.tests.utils import add_db_defaults
-import sqlite3
 
 
-def test_rehydration():
-    conn = sqlite3.connect('hexbugs.db')
-    c = conn.cursor()
+def test_rehydration(conn):
+    c = conn.get_cursor()
     c.execute('BEGIN')
+    print("test_rehydration()")
 
     try:
-        [game_id, weasel_id, bravd_id] = add_db_defaults(c)
+        [game_id, weasel_id, bravd_id] = add_db_defaults(conn)
 
         conn.commit()
 
-        data = player.rehydrate_game(game_id)
+        data = player.rehydrate_game(conn, game_id)
         assert data == ((1, 1, 0, None), [(1, 'Weasel'), (2, 'Bravd')], [])
 
-        print(f'{Fore.LIGHTGREEN_EX}Rehydration matches as expected!{Style.RESET_ALL}')
+        print(f'{Fore.LIGHTGREEN_EX}Rehydration matches as expected{Style.RESET_ALL}')
         print("---------------")
 
         c.execute(f"DELETE FROM game_players WHERE game_id = {game_id}")
@@ -30,8 +29,4 @@ def test_rehydration():
         print(f'{Fore.RED}Error: {e}{Style.RESET_ALL}')
 
     finally:
-        conn.close()
-
-
-if __name__ == '__main__':
-    test_rehydration()
+        conn.rollback()

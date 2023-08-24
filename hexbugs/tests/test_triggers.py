@@ -1,23 +1,17 @@
-import sqlite3
-import json
 from colorama import Fore, Style
+from hexbugs.mind import player
 from hexbugs.tests.utils import add_db_defaults
 
 
-def test_change_players_trigger():
-    conn = sqlite3.connect('hexbugs.db')
-    c = conn.cursor()
+def test_change_players_trigger(conn):
+    c = conn.get_cursor()
     c.execute('BEGIN')
+    print("test_change.players_trigger()")
 
     try:
-        [game_id, weasel_id, bravd_id] = add_db_defaults(c)
+        [game_id, weasel_id, bravd_id] = add_db_defaults(conn)
 
-        c.execute(
-            f"INSERT INTO transactions (game_id, player_id, action) VALUES ({game_id}, {weasel_id}, ?)",
-            (json.dumps({
-                "type": "add",
-                "bug_id": 1
-            }),))
+        player.add_bug(conn, game_id, weasel_id, 1, 1, 0)
 
         c.execute(f'SELECT current_turn FROM games WHERE id = {game_id}')
         assert c.fetchone(
@@ -25,12 +19,7 @@ def test_change_players_trigger():
 
         print("Weasel took a turn")
 
-        c.execute(
-            f"INSERT INTO transactions (game_id, player_id, action) VALUES ({game_id}, {bravd_id}, ?)",
-            (json.dumps({
-                "type": "add",
-                "bug_id": 2
-            }),))
+        player.add_bug(conn, game_id, bravd_id, 2, 0, 0)
 
         c.execute(f'SELECT current_turn FROM games WHERE id = {game_id}')
         assert c.fetchone(
@@ -46,8 +35,3 @@ def test_change_players_trigger():
 
     finally:
         conn.rollback()
-        conn.close()
-
-
-if __name__ == '__main__':
-    test_change_players_trigger()

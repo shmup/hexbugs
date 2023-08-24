@@ -12,16 +12,27 @@ class DBHandler:
 
     def __init__(self, db_name):
         self.db_name = db_name
+        self._conn = None
+        self._cursor = None
 
-    def trigger_exists(self, trigger_name):
-        self.cursor.execute(
-            f"SELECT name FROM sqlite_master WHERE type='trigger' AND name='{trigger_name}'"
-        )
-        return self.cursor.fetchone() is not None
+    def get_cursor(self):
+        if self._conn is None:
+            self._conn = sqlite3.connect(self.db_name)
+        if self._cursor is None:
+            self._cursor = self._conn.cursor()
+        return self._cursor
 
-    def create_trigger(self, trigger_name, sql_string):
-        if not self.trigger_exists(trigger_name):
-            self.cursor.execute(sql_string)
+    def commit(self):
+        if self._conn is not None:
+            self._conn.commit()
+
+    def rollback(self):
+        if self._conn is not None:
+            self._conn.rollback()
+
+    def close(self):
+        if self._conn is not None:
+            self._conn.close()
 
     def __enter__(self):
         self.conn = sqlite3.connect(self.db_name)

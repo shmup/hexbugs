@@ -1,4 +1,5 @@
-def add_db_defaults(c):
+def add_db_defaults(conn):
+    c = conn.get_cursor()
     c.execute("INSERT INTO players (name) VALUES ('Weasel'), ('Bravd')")
 
     c.execute("SELECT id FROM players WHERE name = 'Weasel'")

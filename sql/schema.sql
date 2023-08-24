@@ -28,20 +28,31 @@ CREATE TABLE IF NOT EXISTS game_players (
     FOREIGN KEY(player_id) REFERENCES players(id)
 );
 
+CREATE TABLE IF NOT EXISTS transaction_types (
+    id INTEGER PRIMARY KEY,
+    type TEXT
+);
+
+INSERT INTO transaction_types (type)
+VALUES
+    ('ready'), ('forfeit'), ('add'), ('move');
+
 CREATE TABLE IF NOT EXISTS transactions (
     id INTEGER PRIMARY KEY,
     game_id INTEGER,
     player_id INTEGER,
-    action TEXT, /* { "type": "add", "bug_id": bug_id, ... } */
+    transaction_type_id INTEGER,
+    action TEXT, /* { "bug_id": bug_id, ... } */
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(game_id) REFERENCES games(id),
-    FOREIGN KEY(player_id) REFERENCES players(id)
+    FOREIGN KEY(player_id) REFERENCES players(id),
+    FOREIGN KEY(transaction_type_id) REFERENCES transaction_types(id)
 );
 
 CREATE TRIGGER verify_bug_id_before_transaction
 BEFORE INSERT ON transactions
 FOR EACH ROW
-WHEN json_extract(NEW.action, '$.type') = 'add'
+WHEN NEW.transaction_type_id = 'add'
 BEGIN
    SELECT RAISE(ABORT, 'Invalid bug_id')
    WHERE NOT EXISTS (
@@ -72,11 +83,7 @@ SELECT
     t.game_id,
     t.player_id,
     p.name AS player_name,
-    CASE
-        WHEN json_extract(t.action, '$.type') = 'add' THEN 'added'
-        WHEN json_extract(t.action, '$.type') = 'move' THEN 'moved'
-        ELSE 'performed an action'
-    END AS action_type,
+    tt.type AS action_type,
     b.name AS bug_name,
     json_extract(t.action, '$.x') AS x,
     json_extract(t.action, '$.y') AS y,
@@ -87,8 +94,10 @@ JOIN
     players p ON t.player_id = p.id
 JOIN 
     bugs b ON json_extract(t.action, '$.bug_id') = b.id
+JOIN 
+    transaction_types tt ON t.transaction_type_id = tt.id
 WHERE 
-    (json_extract(t.action, '$.type') = 'add' OR json_extract(t.action, '$.type') = 'move')
+    tt.type IN ('add', 'move')
 ORDER BY 
     t.timestamp;
 
@@ -109,8 +118,7 @@ BEGIN
    )
    WHERE id = NEW.game_id
    AND (
-     json_extract(NEW.action, '$.type') = 'add' OR
-     json_extract(NEW.action, '$.type') = 'move'
+     (SELECT type FROM transaction_types WHERE id = NEW.transaction_type_id) IN ('add', 'move')
    );
 END;
 
