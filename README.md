@@ -6,18 +6,33 @@
 [x] - wire in sqlite database to backend
 
 ## SECOND PASS TODO
-[ ] - sql queries / db method
+[x] - normalize the db
+    - add a transactions and transaction type table
+        * types are ready, concede, add, move (as in adding and moving an insect in a game_id)
+[x] - sql queries / db method
         [x] 1. complete rehydration query, `game`, `game_players` and every
                transaction.
-        [ ] 2. update game
-[ ] - gamestate data structures used by our websocket api
+        [x] 2. move and add bugs
+[x] - gamestate data structures used by our websocket api
         [x] 1. add a data structure for initial game state
-        [ ] 2. add a data structure for a game update
+        [x] 2. add a data structure for a game update
         [x] 3. add a complete data structure for rehydration w/ history
+[ ] - develop some sort of GameManager class that the websocket messages get
+      passed to an instance of or something?
+
+      right now mind/__init__.py has a main function:
+       async def main():
+           async with serve(handle_message, "localhost", 8765):
+               print("The Mind awakes...")
+               await asyncio.Future()
+
+      And handle_message is a basic stubbed out async function that iterates
+      over messages in the websocket
 [ ] - develop game state validation used by websocket api
 [ ] - develop needed websocket messages for a game
         * the idea is that the UI can know the entire game state.
-        * this includes every single piece and their ID, for both players
+        * the game _can_ rehydrate if needed but the player will receive messages
+          that update their frontend board, and pieces not yet added to hive
         * updates include joining game, movements, additions to hive,
           conceding, gameover
 [ ] - develop quick hacky debug UI w/ buttons to simulate a game
@@ -34,6 +49,13 @@
 ## Mind built with python
 
 Will start a game when someone makes a request, the ID either a #hash or /slug.
+
+It must have a "GameManager" which I haven't spec'd out yet, but seems like it'd be a gateway that
+looks up if the slug is a valid game and if the player is in that game, or maybe you can spectate anyways
+
+If it is the player_id or the lobby is open/waiting then update whatever state
+
+I suppose all clients are blasting messages to this Mind though, and the mind is passing them to something I haven't developed yet. I'm lacking in the "class" department, though needn't necessarily be classes vs modules. Anyways..
 
 Websockets server that handles a variety of messages.
 
@@ -69,8 +91,19 @@ constitute actions in a game.
 
     Features: chat, timer, sound effects
 
-### Screens
+## Storage
 
+sqlite and localdb will be used.
+
+sqlite will keep every command transaction.
+
+localdb will remember any options? idk yet.
+
+## Schema
+
+Peek `sql/schema.sql`
+
+### Screens
 1. main page just talks about hive and has a box to start a game which will either go to:
     #foo or /foo, not sure yet?
 2. game page will have center column be the hive board
@@ -84,20 +117,6 @@ constitute actions in a game.
     * tile has a red hue when being held over an illegal move.
     * optional toggle to show # on tiles in order of last played/moved?
     * maybe always make last moved always have some indicator
-
-## Storage
-
-sqlite and localdb will be used.
-
-sqlite will keep every command transaction, excluding chat.
-
-localdb will remember any options? idk yet.
-
-
-## Schema
-
-Peek `sql/schema.sql`
-
 
 ## Rules
 1. Initial Placement Rule: The first piece played by each player must be placed

@@ -1,45 +1,31 @@
-from hexbugs.mind.db import DBHandler
+import json
+
+from hexbugs.mind.models import Transaction, GamePlayer, Game
+from sqlalchemy.exc import NoResultFound
 import json
 
 
-def add_player(name):
-    with DBHandler('hexbugs.db') as cursor:
-        cursor.execute("INSERT INTO players (name) VALUES (?)", (name,))
-
-
-def add_bug(conn, game_id, player_id, bug_id, x, y):
-    cursor = conn.get_cursor()
+def add_bug(session, game_id, player_id, bug_id, x, y):
     action = json.dumps({"bug_id": bug_id, "x": x, "y": y})
     transaction_type = 3
-    cursor.execute(
-        "INSERT INTO transactions (game_id, player_id, transaction_type_id, action) VALUES (?, ?, ?, ?)",
-        (game_id, player_id, transaction_type, action))
+    new_transaction = Transaction(
+        game_id=game_id,
+        player_id=player_id,
+        transaction_type_id=transaction_type,
+        action=action)
+    session.add(new_transaction)
+    session.commit()
 
 
-def rehydrate_game(conn, game_id):
-    cursor = conn.get_cursor()
-    # Get the game
-    cursor.execute("SELECT * FROM games WHERE id = ?", (game_id,))
-    game = cursor.fetchone()
+def rehydrate_game(session, game_id):
+    try:
+        game = session.query(Game).filter(Game.id == game_id).one()
+        players = session.query(GamePlayer).filter(
+            GamePlayer.game_id == game_id).all()
+        transactions = session.query(Transaction).filter(
+            Transaction.game_id == game_id).order_by(
+                Transaction.timestamp.desc()).all()
+        return game, players, transactions
 
-    # Get the players
-    cursor.execute(
-        """
-        SELECT players.*
-        FROM players
-        JOIN game_players ON players.id = game_players.player_id
-        WHERE game_players.game_id = ?
-    """, (game_id,))
-    players = cursor.fetchall()
-
-    # Get the transactions
-    cursor.execute(
-        """
-        SELECT *
-        FROM transactions
-        WHERE game_id = ?
-        ORDER BY timestamp DESC
-    """, (game_id,))
-    transactions = cursor.fetchall()
-
-    return game, players, transactions
+    except NoResultFound:
+        return None

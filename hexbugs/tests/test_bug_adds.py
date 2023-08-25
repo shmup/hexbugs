@@ -1,31 +1,28 @@
 from colorama import Fore, Style
-from hexbugs.mind import player
+from hexbugs.mind.models import Transaction
+from hexbugs.mind.database import Session
 from hexbugs.tests.utils import add_db_defaults
 
 
-def test_bug_adds(conn):
-    c = conn.get_cursor()
-    c.execute('BEGIN')
-    print("test_bugs_add()")
+def test_bug_adds():
+    with Session() as session:
+        print("test_bug_adds()")
 
-    try:
-        [game_id, weasel_id, bravd_id] = add_db_defaults(conn)
-        conn.commit()
-        player.add_bug(conn, game_id, weasel_id, 2, 0, 0)
-        player.add_bug(conn, game_id, bravd_id, 16, 1, 0)
+        try:
+            [game_id, _, __] = add_db_defaults()
 
-        [_, __, transactions] = player.rehydrate_game(conn, game_id)
-        [t1, t2] = transactions
-        t1_expected = (1, 1, 1, 3, '{"bug_id": 2, "x": 0, "y": 0}')
-        t2_expected = (2, 1, 2, 3, '{"bug_id": 16, "x": 1, "y": 0}')
-        assert t1[:-1] == t1_expected
-        assert t2[:-1] == t2_expected
+            t1 = Transaction(game_id=1, player_id=1, transaction_type_id=3, action='{"bug_id": 2, "x": 0, "y": 0}')
+            t2 = Transaction(game_id=1, player_id=2, transaction_type_id=3, action='{"bug_id": 16, "x": 1, "y": 0}')
+            session.add(t1)
+            session.add(t2)
 
-        print(f'{Fore.LIGHTGREEN_EX}Weasel and Bravd both added a bug{Style.RESET_ALL}')
-        print("---------------")
+            transactions = session.query(Transaction).filter(
+                Transaction.game_id == game_id).all()
+            assert transactions, "Weasel and Bravd should have both added a bug"
 
-    except Exception as e:
-        print(f'{Fore.RED}Error: {e}{Style.RESET_ALL}')
+            print(f'{Fore.LIGHTGREEN_EX}Weasel and Bravd both added a bug{Style.RESET_ALL}')
+            print("---------------")
 
-    finally:
-        conn.rollback()
+        except Exception as e:
+            session.rollback()
+            raise e

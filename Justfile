@@ -1,17 +1,20 @@
 export PYTHONPATH:="."
 
 run:
-    @just setup
     @env/bin/python hexbugs/__init__.py
 
 setup: clean
     @echo "Setting up the database"
-    @sqlite3 hexbugs.db < sql/schema.sql
+    @sqlite3 hexbugs/hexbugs.db < hexbugs/sql/schema.sql
+
+history:
+    @sqlite-utils hexbugs/hexbugs.db "SELECT * FROM game_history WHERE game_id = 1;" --table
+
 
 peek:
-    @sqlite-utils hexbugs.db "select * from game_view" --table
+    @sqlite-utils hexbugs/hexbugs.db "select * from game_view" --table
 
-test: clean setup
+test: clean
     @env/bin/python hexbugs/tests/__init__.py
 
 sync-to-dungeon:
@@ -20,6 +23,12 @@ sync-to-dungeon:
       --exclude='.git' \
       --exclude='env'
 
+run-seed-script: clean
+    @env/bin/python hexbugs/seed.py
+
+seed-db: run-seed-script
+    @echo "Database seeded successfully!"
+
 clean:
     @echo "Removing hexbugs.db"
-    @rm -f hexbugs.db
+    @rm -f hexbugs/hexbugs.db

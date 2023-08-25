@@ -1,22 +1,36 @@
-def add_db_defaults(conn):
-    c = conn.get_cursor()
-    c.execute("INSERT INTO players (name) VALUES ('Weasel'), ('Bravd')")
+from hexbugs.mind.models import Player, Game, GamePlayer
+from hexbugs.mind.database import Session
 
-    c.execute("SELECT id FROM players WHERE name = 'Weasel'")
-    p1_id = c.fetchone()[0]
 
-    c.execute("SELECT id FROM players WHERE name = 'Bravd'")
-    p2_id = c.fetchone()[0]
+def add_db_defaults():
+    session = Session()
 
-    c.execute("INSERT INTO games DEFAULT VALUES")
+    try:
+        weasel = Player(name='Weasel')
+        bravd = Player(name='Bravd')
 
-    c.execute("SELECT id FROM games")
-    game_id = c.fetchone()[0]
+        game = Game()
 
-    c.execute(
-        f"INSERT INTO game_players (game_id, player_id) VALUES ({game_id}, {p1_id}), ({game_id}, {p2_id})"
-    )
+        session.add(weasel)
+        session.add(bravd)
+        session.add(game)
+        session.commit()
 
-    print("Weasel and Bravd join the game")
+        game_players_weasel = GamePlayer(game_id=game.id, player_id=weasel.id)
+        game_players_bravd = GamePlayer(game_id=game.id, player_id=bravd.id)
 
-    return [game_id, p1_id, p2_id]
+        session.add(game_players_weasel)
+        session.add(game_players_bravd)
+
+        session.commit()
+
+        print("Weasel and Bravd join the game")
+
+        return [game.id, weasel.id, bravd.id]
+
+    except Exception as e:
+        session.rollback()
+        raise e
+
+    finally:
+        session.close()

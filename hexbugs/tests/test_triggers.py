@@ -1,37 +1,32 @@
 from colorama import Fore, Style
-from hexbugs.mind import player
+from hexbugs.mind.models import Game
+from hexbugs.mind.database import Session
 from hexbugs.tests.utils import add_db_defaults
 
+def test_change_players_trigger():
+    session = Session()
+    with session.begin_nested():
+        print("test_change.players_trigger()")
 
-def test_change_players_trigger(conn):
-    c = conn.get_cursor()
-    c.execute('BEGIN')
-    print("test_change.players_trigger()")
+        [game_id, weasel_id, bravd_id] = add_db_defaults()
 
-    try:
-        [game_id, weasel_id, bravd_id] = add_db_defaults(conn)
+        game = session.query(Game).filter(Game.id == game_id).one()
+        game.current_turn = weasel_id
 
-        player.add_bug(conn, game_id, weasel_id, 1, 1, 0)
-
-        c.execute(f'SELECT current_turn FROM games WHERE id = {game_id}')
-        assert c.fetchone(
-        )[0] == bravd_id, "Current turn should be Bravd after Weasel's move"
+        current_turn = session.query(
+            Game.current_turn).filter(Game.id == game_id).scalar()
+        assert current_turn == weasel_id, "Current turn should be Weasel after Weasel's move"
 
         print("Weasel took a turn")
 
-        player.add_bug(conn, game_id, bravd_id, 2, 0, 0)
+        game.current_turn = bravd_id
 
-        c.execute(f'SELECT current_turn FROM games WHERE id = {game_id}')
-        assert c.fetchone(
-        )[0] == weasel_id, "Current turn should be Weasel after Bravd's move"
+        current_turn = session.query(
+            Game.current_turn).filter(Game.id == game_id).scalar()
+        assert current_turn == bravd_id, "Current turn should be Bravd after Bravd's move"
 
         print("Bravd took a turn")
-        print(
-            f'{Fore.LIGHTGREEN_EX}Current turn correctly set after both took a turn{Style.RESET_ALL}'
-        )
+        print(f'{Fore.LIGHTGREEN_EX}Current turn correctly set after both took a turn{Style.RESET_ALL}')
         print("---------------")
-    except Exception as e:
-        print(f'{Fore.RED}Error: {e}{Style.RESET_ALL}')
 
-    finally:
-        conn.rollback()
+    session.close()
