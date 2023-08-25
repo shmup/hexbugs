@@ -7,13 +7,16 @@ certifi==2023.7.22
 charset-normalizer==3.2.0
 colorama==0.4.6
 frozenlist==1.4.0
+greenlet==2.0.2
 idna==3.4
 importlib-metadata==6.8.0
 multidict==6.0.4
 platformdirs==3.10.0
 requests==2.31.0
+SQLAlchemy==2.0.20
 tomli==2.0.1
 tqdm==4.66.1
+typing_extensions==4.7.1
 urllib3==2.0.4
 websockets==11.0.3
 yapf==0.40.1
