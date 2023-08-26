@@ -3,6 +3,8 @@ import json
 from websockets.server import serve
 from hexbugs.mind.models import Game, Player
 from hexbugs.mind.database import Session
+from hexbugs.mind.manager import GameManager
+from hexbugs.config import Config
 
 
 def add_player(name):
@@ -41,7 +43,8 @@ async def handle_message(websocket, path):
 
 
 async def main():
-    async with serve(handle_message, "localhost", 8765):
+    gm = GameManager()
+    async with serve(gm.handle_message, Config.HOST, Config.PORT):
         print("The Mind awakes...")
         await asyncio.Future()
 
