@@ -1,0 +1,191 @@
+### system
+You are a clean and concise software engineer, ready to help with programming-related, fedora, and vim. When preferable, just show codeblocks.
+### user
+from hexbugs.mind.db import DBHandler
+import json
+
+
+def add_player(name):
+    with DBHandler('hexbugs.db') as cursor:
+        cursor.execute("INSERT INTO players (name) VALUES (?)", (name,))
+
+
+def update_game_over(game_id, game_over):
+    with DBHandler('hexbugs.db') as cursor:
+        cursor.execute("UPDATE games SET game_over = ? WHERE id = ?",
+                       (game_over, game_id))
+
+
+def update_game_state(game_id, state):
+    with DBHandler('hexbugs.db') as cursor:
+        cursor.execute("UPDATE games SET state = ? WHERE id = ?",
+                       (state, game_id))
+
+
+def add_bug(game_id, player_id, bug_id, x, y):
+    with DBHandler('hexbugs.db') as cursor:
+        action = json.dumps({
+            "bug_id": bug_id,
+            "x": x,
+            "y": y
+        })
+        transaction_type = 3
+        cursor.execute(
+            "INSERT INTO transactions (game_id, player_id, transaction_type_id, action) VALUES (?, ?, ?, ?)",
+            (game_id, player_id, transaction_type, action))
+
+
+def rehydrate_game(game_id):
+    with DBHandler('hexbugs.db') as cursor:
+        # Get the game
+        cursor.execute("SELECT * FROM games WHERE id = ?", (game_id,))
+        game = cursor.fetchone()
+
+        # Get the players
+        cursor.execute(
+            """
+            SELECT players.*
+            FROM players
+            JOIN game_players ON players.id = game_players.player_id
+            WHERE game_players.game_id = ?
+        """, (game_id,))
+        players = cursor.fetchall()
+
+        # Get the transactions
+        cursor.execute(
+            """
+            SELECT *
+            FROM transactions
+            WHERE game_id = ?
+            ORDER BY timestamp DESC
+        """, (game_id,))
+        transactions = cursor.fetchall()
+
+    return game, players, transactions
+
+Any clue why this produces a database is locked? It's the add bug i think
+### assistant
+This error typically happens with SQLite when multiple connections are trying to write to the database at the same time. This is because SQLite only allows one write operation at a time, but allows multiple read operations.
+
+In your case, the problem could be that you're opening and closing the connection with each operation. If these functions are called rapidly one after the other (especially in a multi-threaded or asynchronous context), it could lead to a situation where a new connection is trying to write while the previous one hasn't finished yet.
+
+One solution would be to manage your database connection at a higher level of your application, opening it when your application starts and closing it when your application ends. This way, all of your database operations would use the same connection and they would naturally queue up, instead of trying to all write at the same time.
+
+For example:
+
+```python
+class MyApplication:
+    def __init__(self):
+        self.db_handler = DBHandler('hexbugs.db')
+
+    def add_player(self, name):
+        cursor = self.db_handler.cursor()
+        cursor.execute("INSERT INTO players (name) VALUES (?)", (name,))
+
+    def update_game_over(self, game_id, game_over):
+        cursor = self.db_handler.cursor()
+        cursor.execute("UPDATE games SET game_over = ? WHERE id = ?", (game_over, game_id))
+
+    # ... rest of your methods go here ...
+
+    def run(self):
+
+### user
+Is it okay to pass this to other methods/classes?
+### assistant
+Yes, it's perfectly fine to pass the database connection or cursor to other methods or classes. This is commonly done in larger applications where different parts of the program need to interact with the database.
+
+Here's a simple example of how you might pass a database connection to another class:
+
+```python
+class OtherClass:
+    def __init__(self, db_handler):
+        self.db_handler = db_handler
+
+    def do_something_with_db(self):
+        cursor = self.db_handler.cursor()
+        # ... do something with cursor ...
+
+
+class MyApplication:
+    def __init__(self):
+        self.db_handler = DBHandler('hexbugs.db')
+        self.other_class = OtherClass(self.db_handler)
+
+    def run(self):
+        # ... do something ...
+        self.other_class.do_something_with_db()
+        # ... do something else ...
+```
+
+In this example, `OtherClass` is created with a reference to the same `db_handler` that `MyApplication` is using. This way, both classes can operate on the database using the same connection.
+### user
+class DBHandler:
+
+    def __init__(self, db_name):
+        self.db_name = db_name
+
+    async def async_execute(self, sql, params=None):
+        loop = asyncio.get_event_loop()
+        if params is not None:
+            return await loop.run_in_executor(None, self.conn.execute, sql,
+                                              params)
+        else:
+            return await loop.run_in_executor(None, self.conn.execute, sql)
+
+    async def trigger_exists(self, trigger_name):
+        await self.async_execute(
+            "SELECT name FROM sqlite_master WHERE type='trigger' AND name=?",
+            (trigger_name,))
+        return self.cursor.fetchone() is not None
+
+    async def create_trigger(self, trigger_name, sql_string):
+        if not self.trigger_exists(trigger_name):
+            await self.async_execute(sql_string)
+
+    def __enter__(self):
+        self.conn = sqlite3.connect(self.db_name)
+        self.cursor = self.conn.cursor()
+        return self.cursor
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        _ = exc_type, exc_val, exc_tb  # are you happy pyright
+        self.conn.commit()
+        self.conn.close()
+
+Is this the right sort of class to pass the instance around to other functions? I'm not sure it exposes the conn right
+### assistant
+Your `DBHandler` class does not currently expose the `conn` (connection) or `cursor` directly, but it provides methods for executing SQL commands which internally use the `conn` and `cursor`. This sort of encapsulation is generally a good practice as it allows you to control how the database connection is used.
+
+However, if you want to pass around the connection or cursor directly, you could add properties to your class to expose them. Here's an example:
+
+```python
+class DBHandler:
+
+    def __init__(self, db_name):
+        self.db_name = db_name
+        self._conn = None
+        self._cursor = None
+
+    @property
+    def conn(self):
+        return self._conn
+
+    @property
+    def cursor(self):
+        return self._cursor
+
+    # ... rest of your class ...
+
+    def __enter__(self):
+        self._conn = sqlite3.connect(self.db_name)
+        self._cursor = self._conn.cursor()
+        return self._cursor
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # ... rest of your method ...
+```
+
+In this version of your class, `conn` and `cursor` are stored as private attributes (`_conn` and `_cursor`), and they're exposed through `@property` methods. This allows other parts of your code to access the connection and cursor, but they can't modify them directly (i.e., they can't assign a new value to `db_handler.conn` or `db_handler.cursor`).
+### user
+

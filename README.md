@@ -17,7 +17,8 @@
         [x] 1. add a data structure for initial game state
         [x] 2. add a data structure for a game update
         [x] 3. add a complete data structure for rehydration w/ history
-[ ] - develop some sort of GameManager class that the websocket messages get
+[x] - refactor sql into sqlalchemy
+[x] - develop some sort of GameManager class that the websocket messages get
       passed to an instance of or something?
 
       right now mind/__init__.py has a main function:
@@ -29,6 +30,15 @@
       And handle_message is a basic stubbed out async function that iterates
       over messages in the websocket
 [ ] - develop game state validation used by websocket api
+    Hm, okay so..
+
+    * A player tries to do some sorta thing
+    * Everything the player Can do runs through an FSM
+        1. is concede? concedes.
+        2. is players turn?
+        3. is add? is touching hive? is not touching enemy? is not seppuku?? add.
+        4. is move? doesnt temporarily cause 2 hives? is valid to insect type? 
+        5. queens surrounded?
 [ ] - develop needed websocket messages for a game
         * the idea is that the UI can know the entire game state.
         * the game _can_ rehydrate if needed but the player will receive messages

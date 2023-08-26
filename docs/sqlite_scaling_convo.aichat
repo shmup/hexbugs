@@ -1,0 +1,137 @@
+### system
+You are a clean and concise software engineer, ready to help with programming-related, fedora, and vim. When preferable, just show codeblocks.
+### user
+Am I going to have to pass these player methods the conn?
+### assistant
+Yes, if you want to use the same connection and rollback all changes in case of an error, you should pass the connection to the `add_bug` method. Here is how you can modify the code:
+
+```python
+def add_bug(conn, game_id, player_id, bug_id, x, y):
+    c = conn.cursor()
+    action = json.dumps({
+        "type": "add",
+        "bug_id": bug_id,
+        "x": x,
+        "y": y
+    })
+    c.execute(
+        "INSERT INTO transactions (game_id, player_id, action) VALUES (?, ?, ?)",
+        (game_id, player_id, action)
+    )
+
+def test_bug_adds():
+    conn = sqlite3.connect('hexbugs.db')
+
+    try:
+        c = conn.cursor()
+        c.execute('BEGIN')
+        [game_id, weasel_id, bravd_id] = add_db_defaults(c)
+        conn.commit()
+        add_bug(conn, game_id, weasel_id, 2, 0, 0)
+        add_bug(conn, game_id, bravd_id, 16, 1, 0)
+
+        [game, players, transactions] = player.rehydrate_game(game_id)
+        print(transactions)
+
+    except Exception as e:
+        print(f'{Fore.RED}Error: {e}{Style.RESET_ALL}')
+        conn.rollback()
+
+    finally:
+        conn.close()
+```
+
+This way, both `add_bug` calls use the same connection and commit their changes. If an error occurs, all changes since the last commit are rolled back.
+### user
+Curious, cuz now I'm thinking.. how are you supposed to build games with sqlite on the backend? Webapp on the front. So a user moves or adds a bug, or forfeits, whatever, and the client sends a msg over websocket to backend, cool
+
+Does the backend hold on to hte same DB connection for its lifetime? Or does it just open/close it as things come in the wire. Note that I don't know what htis means if 100 games were going on at once, or 1000. Thoughts?
+### assistant
+In a production environment, especially when dealing with multiple concurrent connections, you would typically use a connection pool. A connection pool is a cache of database connections maintained so that the connections can be reused when needed.
+
+When a database connection is required, one is borrowed from the pool. When the client has finished with the connection, it is returned to the pool, allowing it to be reused.
+
+This can vastly improve performance by avoiding the overhead of establishing a new connection every time one is needed, as establishing connections can be costly in terms of system resources and time.
+
+Python's `sqlite3` module doesn't support connection pooling natively. However, you can use SQLAlchemy, a SQL toolkit and Object-Relational Mapping (ORM) system, which provides a way to handle pooling.
+
+Here's a basic example of how to create an engine with a connection pool using SQLAlchemy:
+
+```python
+from sqlalchemy import create_engine
+
+engine = create_engine('sqlite:///hexbugs.db', pool_size=20, max_overflow=0)
+connection = engine.connect()
+
+# Use the connection here ...
+
+connection.close()  # Returns the connection to the pool
+```
+
+In the context of a web application, you'd probably create a single engine when your application starts, and use it to get a new connection for each request.
+
+Note that SQLite is not designed for highly concurrent environments and may not be the best choice if you're planning to support a large number of games at once. For a production environment with high concurrency, a client/server DBMS like PostgreSQL or MySQL might be a better choice.
+### user
+But.. if I do create the engine like you said.. can I still continue to write the code like I am, excuting queries with a VERY similar api? I like writing the raw query..
+### assistant
+Yes, SQLAlchemy allows you to execute raw SQL queries. Although SQLAlchemy is well known for its ORM capabilities, it also provides a SQL Expression Language that can be used to write SQL queries directly. In fact, it's the foundation upon which the ORM is built.
+
+Here's an example of how to execute raw SQL with SQLAlchemy:
+
+```python
+from sqlalchemy import create_engine, text
+
+engine = create_engine('sqlite:///hexbugs.db', pool_size=20, max_overflow=0)
+
+with engine.connect() as connection:
+    result = connection.execute(text("SELECT * FROM transactions"))
+    for row in result:
+        print(row)
+```
+
+In this example, the `text` function is used to create a textual SQL statement that can be executed by the connection. This lets you write SQL in a way that is very similar to what you are doing currently with `sqlite3`.
+
+So you can continue to write raw SQL queries while enjoying the benefits of connection pooling provided by SQLAlchemy.
+### user
+This all aside, since just my friends will be using this for now.. is there a risk of opening the db file at the same time?
+
+async def main():
+  async with serve(handle_message, "localhost", 8765):
+    print("The Mind awakes...")
+    await asyncio.Future()
+
+
+I really don't konw what'll happen when that gets a msg and ultimately mind.db is opened up to write
+### assistant
+SQLite allows multiple processes to have the database file open at once. A process can read from the database at any time, but if a process wants to write to the database, it must lock the entire database file for the duration of its update. If another process wants to write to the database at the same time, it will have to wait until the first process is done.
+
+However, as you're using asyncio, you should be aware that SQLite doesn't support async natively. This means any operation you perform on the database will block the event loop and potentially delay other tasks. 
+
+Here is a simple way to run your SQLite operations in the background using `run_in_executor`: 
+
+```python
+async def async_execute(conn, sql, params=None):
+    loop = asyncio.get_event_loop()
+    if params is not None:
+        return await loop.run_in_executor(None, conn.execute, sql, params)
+    else:
+        return await loop.run_in_executor(None, conn.execute, sql)
+```
+
+You can use this function in place of `conn.execute` in your code. This will offload the execution of the SQL query to a separate thread, allowing the event loop to continue processing other tasks in the meantime.
+
+Keep in mind that this approach does add some overhead, as starting and stopping threads isn't free. For a small number of users, it might be fine, but for a larger number of concurrent users, a database that natively supports async, like PostgreSQL with an async library (e.g., asyncpg), would be more appropriate.
+### user
+Could it support 100? Remember, this is hive, a boardgame with a max piece count of 11 per player.. 
+### assistant
+SQLite can handle multiple connections and is quite capable of handling a decent load. However, its performance can degrade if many connections are trying to write data at the same time due to the database-level lock. 
+
+100 concurrent games each performing small reads and writes might be within SQLite's capabilities, especially if the write operations are not too frequent. However, it depends on various factors such as the complexity of your queries, the frequency of write operations, the speed of the disk where the SQLite database resides, etc.
+
+The best way to know for sure would be to stress test your application with a simulated load of 100 concurrent games and see how it performs.
+
+But as a rule of thumb, if you're planning to scale your application beyond a few concurrent users, a full-fledged client-server DBMS might be a better fit. They are designed to handle multiple concurrent connections and can provide better performance, scalability, and features (like built-in connection pooling) than SQLite. 
+
+Remember, SQLite is a great lightweight database for development, embedded systems, or small applications, but it has its limitations and isn't meant to replace a client-server DBMS in a high-load environment.
+### user
+
