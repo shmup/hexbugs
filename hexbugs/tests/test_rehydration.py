@@ -1,5 +1,5 @@
-from hexbugs.mind.models import Game, Player, GamePlayer
-from hexbugs.mind.database import Session
+from hexbugs.models import Game, GamePlayer, Player
+from hexbugs.database import Session
 from hexbugs.tests.utils import add_db_defaults
 
 

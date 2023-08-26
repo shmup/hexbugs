@@ -1,7 +1,7 @@
 import unittest
 import asyncio
 from unittest.mock import Mock
-from hexbugs.mind.manager import GameManager
+from hexbugs.services.manager import GameManager
 
 class TestGameManager(unittest.TestCase):
     def setUp(self):

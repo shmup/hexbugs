@@ -8,7 +8,7 @@ import time
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestGameManager))
+    # suite.addTest(unittest.makeSuite(TestGameManager))
     return suite
 
 

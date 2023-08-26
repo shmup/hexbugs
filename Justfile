@@ -1,7 +1,7 @@
 export PYTHONPATH:="."
 
 run:
-    @env/bin/python hexbugs/__init__.py
+    @env/bin/python mind.py
 
 setup: clean
     @echo "Setting up the database"

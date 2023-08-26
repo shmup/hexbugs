@@ -1,18 +1,12 @@
-import json
-
-from hexbugs.mind.models import Transaction, GamePlayer, Game
+from hexbugs.models import Transaction, GamePlayer, Game
 from sqlalchemy.exc import NoResultFound
-import json
 
 
 def add_bug(session, game_id, player_id, bug_id, x, y):
-    action = json.dumps({"bug_id": bug_id, "x": x, "y": y})
-    transaction_type = 3
     new_transaction = Transaction(
         game_id=game_id,
         player_id=player_id,
-        transaction_type_id=transaction_type,
-        action=action)
+        action_id=3)
     session.add(new_transaction)
     session.commit()
 

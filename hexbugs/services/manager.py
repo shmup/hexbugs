@@ -1,5 +1,5 @@
-from hexbugs.mind.models import Game, Player, Transaction, Bug
-from hexbugs.mind.database import Session
+from hexbugs.models import Action, ActionType, Bug, Game, Player, Transaction
+from hexbugs.database import Session
 
 
 class GameManager:
@@ -43,11 +43,24 @@ class GameManager:
             if not game or not player or not bug:
                 return
 
+            # Get the 'move' action_type_id
+            action_type = session.query(ActionType).filter_by(
+                type='move').first()
+            if not action_type:
+                return
+
+            # Create a new Action
+            action = Action(
+                action_type_id=action_type.id,
+                bug_id=bug_id,
+                x=new_position['x'],
+                y=new_position['y'],
+                z=new_position['z'])
+            session.add(action)
+            session.commit()
+
+            # Create a new Transaction
             transaction = Transaction(
-                game_id=game_id,
-                player_id=player_id,
-                transaction_type_id=3,
-                action=f'{{"bug_id": {bug.id}, "x": {new_position[0]}, "y": {new_position[1]}}}'
-            )
+                game_id=game_id, player_id=player_id, action_id=action.id)
             session.add(transaction)
             session.commit()
