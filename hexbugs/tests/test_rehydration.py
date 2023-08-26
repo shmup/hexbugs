@@ -1,4 +1,3 @@
-from colorama import Fore, Style
 from hexbugs.mind.models import Game, Player, GamePlayer
 from hexbugs.mind.database import Session
 from hexbugs.tests.utils import add_db_defaults
@@ -7,8 +6,6 @@ from hexbugs.tests.utils import add_db_defaults
 def test_rehydration():
     session = Session()
     with session.begin_nested():
-        print("test_rehydration()")
-
         [game_id, weasel_id, bravd_id] = add_db_defaults()
 
         data = (
@@ -17,9 +14,6 @@ def test_rehydration():
                     Player, GamePlayer.player_id == Player.id).filter(
                         Game.id == game_id).all())
         assert data, "Rehydration should match as expected"
-
-        print(f'{Fore.LIGHTGREEN_EX}Rehydration matches as expected{Style.RESET_ALL}')
-        print("---------------")
 
         session.query(GamePlayer).filter(GamePlayer.game_id == game_id).delete()
         session.query(Game).filter(Game.id == game_id).delete()

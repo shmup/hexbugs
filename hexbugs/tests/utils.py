@@ -24,8 +24,6 @@ def add_db_defaults():
 
         session.commit()
 
-        print("Weasel and Bravd join the game")
-
         return [game.id, weasel.id, bravd.id]
 
     except Exception as e:
